@@ -46,8 +46,10 @@ body{background:white}header,.form,.buttons{display:none!important}.card{box-sha
 <div class="grid">
 <div><label>Customer Name</label><input id="name" placeholder="Customer name"></div>
 <div><label>Phone</label><input id="phone" placeholder="Phone number"></div>
-<div><label>Pickup Date</label><input id="date" type="date"></div>
-<div><label>Pickup Time</label><input id="time" type="time"></div>
+<div><label>Order Method</label><select id="method" onchange="toggleDelivery()"><option value="Pickup">Pickup</option><option value="Delivery">Delivery</option></select></div>
+<div><label>Date</label><input id="date" type="date"></div>
+<div><label>Time</label><input id="time" type="time"></div>
+<div id="deliveryAddressWrap" class="full" style="display:none"><label>Delivery Address</label><input id="deliveryAddress" placeholder="Street address, city, state, ZIP"></div>
 </div>
 </div>
 
@@ -65,10 +67,12 @@ body{background:white}header,.form,.buttons{display:none!important}.card{box-sha
 <div class="grid" style="margin-top:15px">
 <div class="full"><label>Special Instructions</label><textarea id="notes" placeholder="Colors, wording, decorations, allergies, etc."></textarea></div>
 <div><label>Payment Method</label><select id="payment"><option>Cash</option><option>Card</option><option>Check</option><option>Other</option></select></div>
+<div><label>Non-Taxable Delivery Fee</label><input id="deliveryFee" type="number" min="0" step=".01" placeholder="0.00" oninput="calculate()"></div>
 </div>
 <div class="summary">
 <div class="row"><span>Subtotal</span><strong id="subtotal">$0.00</strong></div>
-<div class="row"><span>Hot Springs Tax (9.125%)</span><strong id="tax">$0.00</strong></div>
+<div class="row"><span>Tax</span><strong id="tax">$0.00</strong></div>
+<div class="row" id="deliveryFeeRow" style="display:none"><span>Delivery Fee</span><strong id="deliveryFeeDisplay">$0.00</strong></div>
 <div class="row total"><span>Total</span><strong id="total">$0.00</strong></div>
 </div>
 <div class="buttons">
@@ -84,10 +88,13 @@ body{background:white}header,.form,.buttons{display:none!important}.card{box-sha
 </div>
 <div class="print-line"><b>Customer:</b> <span id="pname"></span></div>
 <div class="print-line"><b>Phone:</b> <span id="pphone"></span></div>
-<div class="print-line"><b>Pickup:</b> <span id="ppickup"></span></div>
+<div class="print-line"><b>Order Method:</b> <span id="pmethod"></span></div>
+<div class="print-line"><b>Date / Time:</b> <span id="ppickup"></span></div>
+<div class="print-line" id="pdeliveryWrap" style="display:none"><b>Delivery Address:</b> <span id="pdelivery"></span></div>
 <div id="pitems"></div>
 <div class="print-line"><b>Subtotal:</b> <span id="psub"></span></div>
-<div class="print-line"><b>Tax (9.125%):</b> <span id="ptax"></span></div>
+<div class="print-line"><b>Tax:</b> <span id="ptax"></span></div>
+<div class="print-line" id="pdeliveryFeeWrap" style="display:none"><b>Delivery Fee:</b> <span id="pdeliveryFee"></span></div>
 <div class="print-line print-total"><b>TOTAL:</b> <span id="ptotal"></span></div>
 <div class="print-line"><b>Payment:</b> <span id="ppayment"></span></div>
 <div class="print-line"><b>Notes:</b> <span id="pnotes"></span></div>
@@ -95,19 +102,31 @@ body{background:white}header,.form,.buttons{display:none!important}.card{box-sha
 </main>
 
 <script>
-const TAX=.09125;
+const TAX=.125;
 const money=n=>'$'+Number(n||0).toFixed(2);
 function calculate(){
  let subtotal=[...document.querySelectorAll('.price')].reduce((s,e)=>s+(parseFloat(e.value)||0),0);
- let tax=subtotal*TAX,total=subtotal+tax;
+ let tax=subtotal*TAX;
+ let deliveryFee=parseFloat(document.getElementById('deliveryFee').value)||0;
+ let total=subtotal+tax+deliveryFee;
  document.getElementById('subtotal').textContent=money(subtotal);
  document.getElementById('tax').textContent=money(tax);
+ document.getElementById('deliveryFeeDisplay').textContent=money(deliveryFee);
+ document.getElementById('deliveryFeeRow').style.display=deliveryFee>0?'flex':'none';
  document.getElementById('total').textContent=money(total);
- return {subtotal,tax,total};
+ return {subtotal,tax,deliveryFee,total};
 }
 document.addEventListener('input',e=>{if(e.target.classList.contains('price'))calculate()});
+function toggleDelivery(){
+ const isDelivery=document.getElementById('method').value==='Delivery';
+ document.getElementById('deliveryAddressWrap').style.display=isDelivery?'block':'none';
+}
 function printTicket(){
  const t=calculate();
+ const isDelivery=document.getElementById('method').value==='Delivery';
+ document.getElementById('pmethod').textContent=document.getElementById('method').value;
+ document.getElementById('pdelivery').textContent=document.getElementById('deliveryAddress').value;
+ document.getElementById('pdeliveryWrap').style.display=isDelivery?'block':'none';
  document.getElementById('pname').textContent=document.getElementById('name').value;
  document.getElementById('pphone').textContent=document.getElementById('phone').value;
  document.getElementById('ppickup').textContent=(document.getElementById('date').value||'')+' '+(document.getElementById('time').value||'');
@@ -115,15 +134,24 @@ function printTicket(){
  document.getElementById('pnotes').textContent=document.getElementById('notes').value;
  document.getElementById('psub').textContent=money(t.subtotal);
  document.getElementById('ptax').textContent=money(t.tax);
+ document.getElementById('pdeliveryFee').textContent=money(t.deliveryFee);
+ document.getElementById('pdeliveryFeeWrap').style.display=t.deliveryFee>0?'block':'none';
  document.getElementById('ptotal').textContent=money(t.total);
  const rows=[...document.querySelectorAll('.item')].slice(1);
  document.getElementById('pitems').innerHTML=rows.map(r=>{
    const price=parseFloat(r.querySelector('.price').value)||0, desc=r.querySelector('.desc').value;
-   return price?`<div class="print-line"><b>${r.querySelector('strong').textContent}</b> — ${desc} <span style="float:right">${money(price)}</span></div>`:'';
+   return price?'<div class="print-line"><b>'+r.querySelector('strong').textContent+'</b> — '+desc+' <span style="float:right">'+money(price)+'</span></div>':'';
  }).join('');
  window.print();
 }
-function clearForm(){document.querySelectorAll('input,textarea').forEach(e=>e.value='');calculate();}
+function clearForm(){
+ document.querySelectorAll('input,textarea').forEach(e=>e.value='');
+ document.getElementById('deliveryFee').value='';
+ document.getElementById('method').value='Pickup';
+ toggleDelivery();
+ calculate();
+}
+toggleDelivery();
 calculate();
 </script>
 </body>
