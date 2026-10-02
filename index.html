@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Destiny's Bake Shop | Order Ticket</title>
+<style>
+:root{--pink:#b94b72;--dark:#2b2024;--cream:#fff9f5;--line:#dfd2d5}
+*{box-sizing:border-box} body{margin:0;font-family:Arial,sans-serif;background:#f5eee9;color:var(--dark)}
+header{background:var(--dark);color:white;text-align:center;padding:28px 16px}
+header h1{margin:0 0 8px;font-family:Georgia,serif;font-size:38px}
+header p{margin:4px 0;font-size:15px}
+main{max-width:900px;margin:25px auto;padding:0 16px}
+.card{background:white;border-radius:14px;padding:24px;box-shadow:0 5px 20px #0001;margin-bottom:20px}
+h2{margin:0 0 18px;font-family:Georgia,serif;color:var(--pink)}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+label{font-weight:bold;font-size:14px;display:block;margin-bottom:6px}
+input,select,textarea{width:100%;padding:11px;border:1px solid var(--line);border-radius:8px;font-size:15px}
+textarea{min-height:85px;resize:vertical}.full{grid-column:1/-1}
+.items{border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.item{display:grid;grid-template-columns:1.2fr 2fr .8fr;gap:10px;padding:12px;border-bottom:1px solid var(--line);align-items:center}
+.item:last-child{border-bottom:0}.item strong{font-size:14px}
+.summary{margin-top:18px;margin-left:auto;max-width:330px}.row{display:flex;justify-content:space-between;padding:7px 0}.total{font-size:22px;font-weight:bold;border-top:2px solid var(--dark);margin-top:5px;padding-top:12px}
+.buttons{display:flex;gap:12px;flex-wrap:wrap;margin-top:20px}
+button{border:0;border-radius:9px;padding:13px 20px;font-size:15px;font-weight:bold;cursor:pointer}
+.primary{background:var(--pink);color:white}.secondary{background:#eee;color:var(--dark)}
+#ticket{display:none}
+@media(max-width:650px){.grid{grid-template-columns:1fr}.item{grid-template-columns:1fr}.full{grid-column:auto}}
+@media print{
+body{background:white}header,.form,.buttons{display:none!important}.card{box-shadow:none;padding:0}
+#ticket{display:block!important}.ticket-title{text-align:center;font-family:Georgia,serif}
+.print-line{border-bottom:1px solid #999;padding:7px 0}.print-total{font-weight:bold;font-size:20px}
+}
+</style>
+</head>
+<body>
+<header>
+<h1>Destiny's Bake Shop</h1>
+<p>1001 Central Ave A • Hot Springs, AR 71901</p>
+<p>Order Ticket</p>
+</header>
+
+<main>
+<div class="card form">
+<h2>Customer Information</h2>
+<div class="grid">
+<div><label>Customer Name</label><input id="name" placeholder="Customer name"></div>
+<div><label>Phone</label><input id="phone" placeholder="Phone number"></div>
+<div><label>Pickup Date</label><input id="date" type="date"></div>
+<div><label>Pickup Time</label><input id="time" type="time"></div>
+</div>
+</div>
+
+<div class="card form">
+<h2>Order</h2>
+<div class="items">
+<div class="item"><strong>Item</strong><strong>Description</strong><strong>Price</strong></div>
+<div class="item"><strong>Custom Cake</strong><input class="desc" placeholder="Flavor / size / design"><input class="price" type="number" min="0" step=".01"></div>
+<div class="item"><strong>Cupcakes</strong><input class="desc" placeholder="Flavor / quantity"><input class="price" type="number" min="0" step=".01"></div>
+<div class="item"><strong>Cookies</strong><input class="desc" placeholder="Type / quantity"><input class="price" type="number" min="0" step=".01"></div>
+<div class="item"><strong>Pastries</strong><input class="desc" placeholder="Type / quantity"><input class="price" type="number" min="0" step=".01"></div>
+<div class="item"><strong>Brownies</strong><input class="desc" placeholder="Type / quantity"><input class="price" type="number" min="0" step=".01"></div>
+<div class="item"><strong>Other</strong><input class="desc" placeholder="Item / details"><input class="price" type="number" min="0" step=".01"></div>
+</div>
+<div class="grid" style="margin-top:15px">
+<div class="full"><label>Special Instructions</label><textarea id="notes" placeholder="Colors, wording, decorations, allergies, etc."></textarea></div>
+<div><label>Payment Method</label><select id="payment"><option>Cash</option><option>Card</option><option>Check</option><option>Other</option></select></div>
+</div>
+<div class="summary">
+<div class="row"><span>Subtotal</span><strong id="subtotal">$0.00</strong></div>
+<div class="row"><span>Hot Springs Tax (9.125%)</span><strong id="tax">$0.00</strong></div>
+<div class="row total"><span>Total</span><strong id="total">$0.00</strong></div>
+</div>
+<div class="buttons">
+<button class="primary" onclick="printTicket()">Create / Print Ticket</button>
+<button class="secondary" onclick="clearForm()">Clear Order</button>
+</div>
+</div>
+
+<div id="ticket" class="card">
+<div class="ticket-title">
+<h1>Destiny's Bake Shop</h1>
+<p>1001 Central Ave A • Hot Springs, AR 71901</p><h2>ORDER TICKET</h2>
+</div>
+<div class="print-line"><b>Customer:</b> <span id="pname"></span></div>
+<div class="print-line"><b>Phone:</b> <span id="pphone"></span></div>
+<div class="print-line"><b>Pickup:</b> <span id="ppickup"></span></div>
+<div id="pitems"></div>
+<div class="print-line"><b>Subtotal:</b> <span id="psub"></span></div>
+<div class="print-line"><b>Tax (9.125%):</b> <span id="ptax"></span></div>
+<div class="print-line print-total"><b>TOTAL:</b> <span id="ptotal"></span></div>
+<div class="print-line"><b>Payment:</b> <span id="ppayment"></span></div>
+<div class="print-line"><b>Notes:</b> <span id="pnotes"></span></div>
+</div>
+</main>
+
+<script>
+const TAX=.09125;
+const money=n=>'$'+Number(n||0).toFixed(2);
+function calculate(){
+ let subtotal=[...document.querySelectorAll('.price')].reduce((s,e)=>s+(parseFloat(e.value)||0),0);
+ let tax=subtotal*TAX,total=subtotal+tax;
+ document.getElementById('subtotal').textContent=money(subtotal);
+ document.getElementById('tax').textContent=money(tax);
+ document.getElementById('total').textContent=money(total);
+ return {subtotal,tax,total};
+}
+document.addEventListener('input',e=>{if(e.target.classList.contains('price'))calculate()});
+function printTicket(){
+ const t=calculate();
+ document.getElementById('pname').textContent=document.getElementById('name').value;
+ document.getElementById('pphone').textContent=document.getElementById('phone').value;
+ document.getElementById('ppickup').textContent=(document.getElementById('date').value||'')+' '+(document.getElementById('time').value||'');
+ document.getElementById('ppayment').textContent=document.getElementById('payment').value;
+ document.getElementById('pnotes').textContent=document.getElementById('notes').value;
+ document.getElementById('psub').textContent=money(t.subtotal);
+ document.getElementById('ptax').textContent=money(t.tax);
+ document.getElementById('ptotal').textContent=money(t.total);
+ const rows=[...document.querySelectorAll('.item')].slice(1);
+ document.getElementById('pitems').innerHTML=rows.map(r=>{
+   const price=parseFloat(r.querySelector('.price').value)||0, desc=r.querySelector('.desc').value;
+   return price?`<div class="print-line"><b>${r.querySelector('strong').textContent}</b> — ${desc} <span style="float:right">${money(price)}</span></div>`:'';
+ }).join('');
+ window.print();
+}
+function clearForm(){document.querySelectorAll('input,textarea').forEach(e=>e.value='');calculate();}
+calculate();
+</script>
+</body>
+</html>
